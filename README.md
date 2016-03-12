@@ -4,8 +4,9 @@ Yet another lab1.
 
 
 HOW TO BUILD
-
+<pre>
 $ make
+</pre>
 
 
 HOW TO RUN
@@ -19,5 +20,6 @@ $ ./bin/lab --mode={posix --amount=N} |
 
 
 HOW TO CLEAN
-
+<pre>
 $ make clean
+</pre>
