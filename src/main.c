@@ -1,6 +1,6 @@
-#include <hello.h>
+#include <common.h>
 
-int main(void) {
-    say_hello();
+int main(int argc, char ** argv) {
+    parse_args(argc, argv);
     return 0;
 }

@@ -1,13 +1,15 @@
-Description:
-Сильно усложнённый hello_world из нулевой лекции Кудрявцева.
-Все команды запускаются из корня проекта.
+DESCRIPTION
+Yet another lab1.
 
-How to build:
-$ mkdir -p bin
+HOW TO BUILD
 $ make
 
-How to run:
-$ ./bin/lab
+HOW TO RUN
+$ ./bin/lab --mode={posix --amount=<N>} |
+                   {kill --signo=<S> --pid=<P>} |
+                   {child} |
+                   {std} |
+                   {pipe}
 
-How to clean:
+HOW TO CLEAN
 $ make clean
