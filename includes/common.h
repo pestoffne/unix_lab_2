@@ -1,6 +1,8 @@
 #ifndef __COMMON__
 #define __COMMON__
 
-void parse_args();
+typedef void (*script_t)();
+
+script_t parse_args();
 
 #endif

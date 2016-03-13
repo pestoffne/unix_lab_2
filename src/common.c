@@ -3,10 +3,10 @@
 #include <stdlib.h>
 
 #include "common.h"
-#include "script.h"
+#include "child.h"
 
 // modes: std, posix, kill, pipe, child
-void * get_script(char * name) {
+script_t get_script(char * name) {
     if (strcmp(name, "child") == 0) {
         printf("child");
         return &script_child;
@@ -16,7 +16,7 @@ void * get_script(char * name) {
     }
 }
 
-void parse_args(int argc, char ** argv) {
+script_t parse_args(int argc, char ** argv) {
     // prints all args
     //printf("args list:\r\n");
     //int i;
@@ -26,6 +26,7 @@ void parse_args(int argc, char ** argv) {
     // parse using getopt
     int c;
     int digit_optind = 0;
+    script_t script;
 
     while (1) {
         // int this_option_optind = optind ? optind : 1;
@@ -48,7 +49,7 @@ void parse_args(int argc, char ** argv) {
                 switch (option_index) {
                     case 0: // mode
                         printf("mode ");
-                        get_script(optarg);
+                        script = get_script(optarg);
                         break;
                     case 1: // amount
                         printf("amount ");
@@ -73,4 +74,5 @@ void parse_args(int argc, char ** argv) {
                 exit(3);
         }
     }
+    return script;
 }
