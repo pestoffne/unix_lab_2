@@ -5,6 +5,10 @@
 #include "common.h"
 #include "child.h"
 
+void default_script() {
+    perror("Mode is not selected. Nothing to do.\n");
+}
+
 // modes: std, posix, kill, pipe, child
 script_t get_script(char * name) {
     if (strcmp(name, "child") == 0) {
@@ -26,7 +30,7 @@ script_t parse_args(int argc, char ** argv) {
     // parse using getopt
     int c;
     int digit_optind = 0;
-    script_t script;
+    script_t script = &default_script;
 
     while (1) {
         // int this_option_optind = optind ? optind : 1;
