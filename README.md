@@ -11,15 +11,27 @@ $ make
 
 HOW TO RUN
 <pre>
-$ ./bin/lab --mode={posix --amount=N} |
-                   {kill --signo=S --pid=P} |
-                   {child} |
-                   {std} |
-                   {pipe}
+$ ./bin/lab --mode [=] {posix --amount=N} |
+                       {kill --signo=S --pid=P} |
+                       {child} |
+                       {std} |
+                       {pipe}
+</pre>
+
+
+HOW TO USE WITH --mode std
+<pre>
+Step 1: $ ./bin/lab --mode std
+Step 2: Copy <PID>.
+Step 3: Cause from another terminal:
+        $ kill -s <signal> <PID>
+Step 4: Process will print PID, GID and finished.
 </pre>
 
 
 HOW TO CLEAN
 <pre>
 $ make clean
+or
+$ make clear
 </pre>

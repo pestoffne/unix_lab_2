@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "child.h"
+#include "std.h"
 
 void default_script() {
     perror("Mode is not selected. Nothing to do.\n");
@@ -14,6 +15,9 @@ script_t get_script(char * name) {
     if (strcmp(name, "child") == 0) {
         printf("child");
         return &script_child;
+    } else if (strcmp(name, "std") == 0) {
+        printf("std");
+        return &script_std;
     } else {
         perror("unexpected mode value");
         exit(4);
