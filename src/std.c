@@ -45,7 +45,9 @@ void script_std() {
         perror("Process: Fail while changing SIGHUP handler. ");
         exit(11);
     }
-    printf("Process: I wait for a SIGUSR1 , SIGUSR2 or SIGHUP .\n");
-    sleep(60);
+    printf("Process: I wait for a SIGUSR1(%d), SIGUSR2(%d) or SIGHUP(%d).\n", SIGUSR1, SIGUSR2, SIGHUP);
+    while (1) {
+        sleep(1);
+    }
     printf("Process: Finished.\n");
 }
