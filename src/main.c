@@ -5,6 +5,7 @@
 #include "child.h"
 #include "std.h"
 #include "kill.h"
+#include "pipe.h"
 
 typedef void (*script_t)();
 
@@ -21,6 +22,8 @@ script_t get_script(char * name) {
         return &script_std;
     } else if (0 == strcmp(name, "kill")) {
         return &script_kill;
+    } else if (0 == strcmp(name, "pipe")) {
+        return &script_pipe;
     } else {
         fprintf(stderr, "Unexpected mode value.\n");
         exit(4);
