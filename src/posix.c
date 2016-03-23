@@ -15,7 +15,8 @@ void handle_posix(int signal, siginfo_t *siginfo, void *context) {
         resieved_signals_count++;
 }
 
-void script_posix(int amount_of_signals) {
+// uses global: amount
+void script_posix() {
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO;
     sa.sa_sigaction = &handle_posix;
@@ -37,7 +38,7 @@ void script_posix(int amount_of_signals) {
         int buckets = RAND_MAX / range;
         int limit = buckets * range;
         int i;
-        for (i = 0; i < amount_of_signals; ++i) {
+        for (i = 0; i < amount; ++i) {
             union sigval value;
 
             int r_signal;
@@ -49,7 +50,7 @@ void script_posix(int amount_of_signals) {
 
             value.sival_int = rand();
             sigqueue(getppid(), r_signal, value);
-            fprintf(stderr, "CHILD: N=%i | MYPID=%i | PPID=%i | POSIXSIGNALNO=%i | VALUE=%i\n",
+            fprintf(stderr, "Child:   N=%i | MYPID=%i | PPID=%i | POSIXSIGNALNO=%i | VALUE=%i\n",
                 i, getpid(), getppid(), r_signal, value.sival_int);
         }
         printf("Child:   Finished.\n");
