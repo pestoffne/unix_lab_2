@@ -22,9 +22,9 @@ $ ./bin/lab --mode [=] {posix --amount=N} |
 HOW TO USE WITH --mode std
 <pre>
 Step 1: $ ./bin/lab --mode std
-Step 2: Copy <PID>.
+Step 2: Copy PID.
 Step 3: Cause from another terminal:
-        $ kill -s <signal> <PID>
+        $ kill -s SIGNAL PID
 Step 4: Process will print PID, GID and finished.
 </pre>
 

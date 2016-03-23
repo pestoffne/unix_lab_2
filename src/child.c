@@ -25,7 +25,7 @@ void script_child() {
     sa.sa_sigaction = &handle_child;
     int sleep_time = 5;
     if (-1 == sigaction(SIGCHLD, &sa, NULL)) {
-        // TODO
+        perror("?:       Fail while creating handler.");
         exit(17);
     }
 
@@ -40,7 +40,7 @@ void script_child() {
         printf("Parent:  Started.\n");
         int status;
         if (-1 == wait(&status)) {
-            perror("Parent:  Failed to handle CHLD zombie");
+            perror("Parent:  Failed to handle CHLD zombie.");
             exit(16);
         }
         printf("Parent:  Finished.\n");
