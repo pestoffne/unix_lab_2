@@ -3,10 +3,10 @@ SRC=./src
 OUT=./bin
 
 
-$(OUT)/lab: $(OUT)/main.o $(OUT)/child.o $(OUT)/std.o $(OUT)/kill.o $(OUT)/pipe.o
-	gcc -o $(OUT)/lab $(OUT)/main.o $(OUT)/child.o $(OUT)/std.o $(OUT)/kill.o $(OUT)/pipe.o
+$(OUT)/lab: $(OUT)/main.o $(OUT)/child.o $(OUT)/std.o $(OUT)/kill.o $(OUT)/pipe.o $(OUT)/posix.o
+	gcc -o $(OUT)/lab $(OUT)/main.o $(OUT)/child.o $(OUT)/std.o $(OUT)/kill.o $(OUT)/pipe.o $(OUT)/posix.o
 
-$(OUT)/main.o: $(SRC)/main.c $(INC)/child.h $(INC)/std.h $(INC)/kill.h $(INC)/pipe.h
+$(OUT)/main.o: $(SRC)/main.c $(INC)/child.h $(INC)/std.h $(INC)/kill.h $(INC)/pipe.h $(INC)/posix.h
 	gcc -I $(INC) -o $(OUT)/main.o -c $(SRC)/main.c
 
 $(OUT)/child.o: $(SRC)/child.c $(INC)/child.h
@@ -20,6 +20,9 @@ $(OUT)/kill.o: $(SRC)/kill.c $(INC)/kill.h
 
 $(OUT)/pipe.o: $(SRC)/pipe.c $(INC)/pipe.h
 	gcc -I $(INC) -o $(OUT)/pipe.o -c $(SRC)/pipe.c
+
+$(OUT)/posix.o: $(SRC)/posix.c $(INC)/posix.h
+	gcc -I $(INC) -o $(OUT)/posix.o -c $(SRC)/posix.c
 
 clear: clean
 clean:

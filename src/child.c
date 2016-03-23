@@ -15,7 +15,7 @@ void handle_child(int signal, siginfo_t *siginfo, void *context) {
         printf("Handler: si_status=%i\n", siginfo->si_status);
         printf("Handler: si_code=%i\n", siginfo->si_code);
     } else {
-        perror("Handler: Unexpected signal.\n"); // TODO
+        fprintf(stderr, "Handler: Unexpected signal.\n");
     }
 }
 
@@ -40,7 +40,7 @@ void script_child() {
         printf("Parent:  Started.\n");
         int status;
         if (-1 == wait(&status)) {
-            // TODO
+            perror("Parent:  Failed to handle CHLD zombie");
             exit(16);
         }
         printf("Parent:  Finished.\n");

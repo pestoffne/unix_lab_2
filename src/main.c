@@ -6,6 +6,7 @@
 #include "std.h"
 #include "kill.h"
 #include "pipe.h"
+#include "posix.h"
 
 typedef void (*script_t)();
 
@@ -24,6 +25,8 @@ script_t get_script(char * name) {
         return &script_kill;
     } else if (0 == strcmp(name, "pipe")) {
         return &script_pipe;
+    } else if (0 == strcmp(name, "posix")) {
+        return &script_posix;
     } else {
         fprintf(stderr, "Unexpected mode value.\n");
         exit(4);
@@ -58,7 +61,7 @@ int main(int argc, char ** argv) {
                         script = get_script(optarg);
                         break;
                     case 1:  // amount
-                        // amount = optarg TODO
+                        amount = atoi(optarg);
                         break;
                     case 2:  // signo
                         signo = atoi(optarg);
