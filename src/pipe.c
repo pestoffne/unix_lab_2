@@ -30,16 +30,6 @@ void script_pipe() {
     pid_t pid = fork();
     if (0 == pid) {  // child
         printf("Child:   Started.\n");
-        // close read fd
-        if (-1 == close(pipefd[0])) {
-            perror("Child:   Can not close read fd of pipe.");
-            exit(14);
-        }
-        // close write fd
-        if (-1 == close(pipefd[1])) {
-            perror("Child:   Can not close write fd of pipe.");
-            exit(14);
-        }
         printf("Child:   Finished.\n");
     } else if (pid > 0) {  // parent
         printf("Parent:  Started.\n");
@@ -49,12 +39,7 @@ void script_pipe() {
             exit(14);
         }
         sleep(1);
-        write(pipefd[1], "hello", 12);
-        int status;
-        if (-1 == wait(&status)) {
-            perror("Parent:  Failed to handle CHLD zombie.");
-            exit(16);
-        }
+        write(pipefd[1], "foo", 12);
         printf("Parent:  Finished.\n");
     } else {  // (-1 == pid) error
         perror("?:       Pid is negative, after fork.\n");
