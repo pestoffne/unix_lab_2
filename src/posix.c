@@ -2,17 +2,35 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "posix.h"
 
-int resieved_signals_count = 0;
+#define MAX_SIZE 128
+int ar_posix_signal_no[MAX_SIZE];
+int ar_sival_int[MAX_SIZE];
+pid_t ar_my_pid[MAX_SIZE];
+pid_t ar_parent_pid[MAX_SIZE];
+int current_index = 0;
+
+void print_table(char *sender, int N) {
+    printf("%-8s | %3s | %6s | %10s | %27s | %12s |\n", sender, "N", "MY_PID", "PARENT_PID", "RANDOM_POSIX_SIGNAL_SENT_NO", "RANDOM_VALUE");
+    int i;
+    for (i = 0; i < N; i++) {
+        printf("%-8s | %3i | %6i | %10i | %27i | %12i |\n", sender, i + 1, ar_my_pid[i], ar_parent_pid[i], ar_posix_signal_no[i], ar_sival_int[i]);
+    }
+}
 
 void handle_posix(int signal, siginfo_t *siginfo, void *context) {
-        const char *signal_name;
+    int i = current_index++;
+    ar_posix_signal_no[i] = signal;
+    ar_sival_int[i] = siginfo->si_value.sival_int;
+    ar_my_pid[i] = getpid();
+    ar_parent_pid[i] = getppid();
+}
 
-        fprintf(stderr, "Handler: N=%i | MYPID=%i | PPID=%i | POSIXSIGNALNO=%i | VALUE=%i\n",
-                resieved_signals_count, siginfo->si_pid, getpid(), signal, siginfo->si_value.sival_int);
-        resieved_signals_count++;
+int my_rand(int min, int max) {
+    return rand() % (max - min + 1) + min;
 }
 
 // uses global: amount
@@ -21,50 +39,34 @@ void script_posix() {
     sa.sa_flags = SA_SIGINFO;
     sa.sa_sigaction = &handle_posix;
 
-    // sigset_t set;
-    if(sigaction(SIGRTMIN, &sa, NULL) == -1){
-        perror("Ошибка: не удается обработать сигнал SIGRTMIN");
-    }
-
     int j = 0;
-    for (j = 0; j < SIGRTMAX; j++) {
-        sigaction(SIGRTMIN + j, &sa, NULL);
+    for (j = SIGRTMIN; j <= SIGRTMAX; j++) {
+        if (-1 == sigaction(j, &sa, NULL)) {
+            fprintf(stderr, "%8s Fail while creating handler. %s\n", "?:", strerror(errno));
+            exit(17);
+        }
     }
 
     pid_t pid = fork();
     if (0 == pid) {  // child
-        printf("Child:   Started.\n");
-        int range = 1 + SIGRTMAX - SIGRTMIN;
-        int buckets = RAND_MAX / range;
-        int limit = buckets * range;
+        printf("%-8s Started.\n", "Child:");
         int i;
-        for (i = 0; i < amount; ++i) {
+        for (i = 0; i < amount; i++) {
             union sigval value;
-
-            int r_signal;
-            do {
-                r_signal = rand();
-            } while (r_signal >= limit);
-
-            r_signal = SIGRTMIN + (r_signal / buckets);
-
             value.sival_int = rand();
-            sigqueue(getppid(), r_signal, value);
-            fprintf(stderr, "Child:   N=%i | MYPID=%i | PPID=%i | POSIXSIGNALNO=%i | VALUE=%i\n",
-                i, getpid(), getppid(), r_signal, value.sival_int);
+            if (-1 == sigqueue(getppid(), my_rand(SIGRTMIN, SIGRTMAX), value)) {
+                fprintf(stderr, "%-8s Fail while sending posix signal. %s\n", "Child:", strerror(errno));
+                exit(19);
+            }
         }
-        printf("Child:   Finished.\n");
+        printf("%-8s Finished.\n", "Child:");
     } else if (pid > 0) {  // parent
-        printf("Parent:  Started.\n");
-        int status;
-        sleep(10);
-        if (-1 == wait(&status)) {
-            perror("Parent:  Failed to handle CHLD zombie");
-            exit(16);
-        }
-        printf("Parent:  Finished.\n");
+        printf("%-8s Started.\n", "Parent:");
+        sleep(1);
+        print_table("Parent:", amount);
+        printf("%-8s Finished.\n", "Parent:");
     } else {  // (-1 == pid) error
-        perror("?:       Pid is negative, after fork.\n");
+        fprintf(stderr, "%-8s Pid is negative, after fork. %s\n", "?:", strerror(errno));
         exit(10);
     }
 }

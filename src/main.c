@@ -34,6 +34,7 @@ script_t get_script(char * name) {
 }
 
 int main(int argc, char ** argv) {
+    srand(time(NULL));
     // parse using getopt
     int c;
     int digit_optind = 0;
