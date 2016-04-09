@@ -2,10 +2,7 @@
 #include <getopt.h>
 #include <stdlib.h>
 
-void process(char* a, char* b, int c) {
-    fprintf(stderr, "process(%s, %s, %i)\n", a, b, c);
-    return;
-}
+#include "process.h"
 
 int main(int argc, char ** argv) {
     srand(time(NULL));
