@@ -2,35 +2,9 @@
 #include <getopt.h>
 #include <stdlib.h>
 
-#include "child.h"
-#include "std.h"
-#include "kill.h"
-#include "pipe.h"
-#include "posix.h"
-
-typedef void (*script_t)();
-
-void default_script() {
-    fprintf(stderr, "Mode is not selected. Nothing to do.\n");
-}
-
-script_t get_script(char * name) {
-    // Gets mode name and returns function that contains the corresponding script
-    // modes: std, posix, kill, pipe, child
-    if (0 == strcmp(name, "child")) {
-        return &script_child;
-    } else if (0 == strcmp(name, "std")) {
-        return &script_std;
-    } else if (0 == strcmp(name, "kill")) {
-        return &script_kill;
-    } else if (0 == strcmp(name, "pipe")) {
-        return &script_pipe;
-    } else if (0 == strcmp(name, "posix")) {
-        return &script_posix;
-    } else {
-        fprintf(stderr, "Unexpected mode value.\n");
-        exit(4);
-    }
+void process(char* a, char* b, int c) {
+    fprintf(stderr, "process(%s, %s, %i)\n", a, b, c);
+    return;
 }
 
 int main(int argc, char ** argv) {
@@ -38,16 +12,18 @@ int main(int argc, char ** argv) {
     // parse using getopt
     int c;
     int digit_optind = 0;
-    script_t script = &default_script;
+
+    char * logfile = "";
+    char * command = "";
+    char multiplex = 1;
 
     while (1) {
         int option_index = 0;
         static struct option long_options[] = {
-            {"mode",   1, 0, 0 }, // index = 0
-            {"amount", 1, 0, 0 }, // index = 1
-            {"signo",  1, 0, 0 }, // index = 2
-            {"pid",    1, 0, 0 }, // index = 3
-            {0,        0, 0, 0 }
+            {"logfile",   1, 0, 0 }, // index = 0
+            {"execute",   1, 0, 0 }, // index = 1
+            {"multiplex", 1, 0, 0 }, // index = 2
+            {0,           0, 0, 0 }
         };
 
         c = getopt_long(argc, argv, "", long_options, &option_index);
@@ -58,18 +34,22 @@ int main(int argc, char ** argv) {
             case 0:
                 // parse --long arg
                 switch (option_index) {
-                    case 0:  // mode
-                        script = get_script(optarg);
+                    case 0:  // logfile
+                        logfile = optarg;
                         break;
-                    case 1:  // amount
-                        amount = atoi(optarg);
+                    case 1:  // execute
+                        command = optarg;
                         break;
-                    case 2:  // signo
-                        signo = atoi(optarg);
-                        break;
-                    case 3:  // pid
-                        pid = atoi(optarg);
-                        break;
+                    case 2:  // multiplex
+                        multiplex = atoi(optarg);
+                        if (multiplex == 0 || multiplex == 1) {
+                            break;
+                        } else {
+                            fprintf(stderr,
+                                "Incorrect multiplex value : '%s'.\n",
+                                optarg);
+                            exit(2);
+                        }
                 }
                 break;
             case '?':
@@ -77,9 +57,9 @@ int main(int argc, char ** argv) {
                 exit(2);
             default:
                 fprintf(stderr, "Error while parseing args.\n");
-                exit(3);
+                exit(2);
         }
     }
-    script();
+    process(logfile, command, multiplex);
     return 0;
 }

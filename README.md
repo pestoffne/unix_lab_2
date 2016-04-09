@@ -1,6 +1,6 @@
 DESCRIPTION
 
-Yet another lab1.
+Yet another lab2.
 
 
 HOW TO BUILD
@@ -11,21 +11,7 @@ $ make
 
 HOW TO RUN
 <pre>
-$ ./bin/lab --mode [=] {posix --amount=N} |
-                       {kill --signo=S --pid=P} |
-                       {child} |
-                       {std} |
-                       {pipe}
-</pre>
-
-
-HOW TO USE WITH --mode std
-<pre>
-Step 1: $ ./bin/lab --mode std
-Step 2: Copy PID.
-Step 3: Cause from another terminal:
-        $ kill -s SIGNAL PID
-Step 4: Process will print PID, GID and finished.
+$ ./manager --logfile LF --execute "CMD ARGS" --multiplex M
 </pre>
 
 
