@@ -15,3 +15,4 @@ $(OUT)/process.o: $(SRC)/process.c $(INC)/process.h
 clear: clean
 clean:
 	rm -f $(OUT)/*.o $(OUT)/lab
+	rm -f manager
