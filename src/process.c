@@ -22,7 +22,7 @@ void my_execute(char * command) {
         args[++i] = pch;
     } // TODO checks index out of array
     execvp(*args, args);
-    fprintf(stderr, "%-8s Error while execvp. %s\n", "Child:", strerror(errno));
+    fprintf(stderr, "%10d Can not execute \"%s\". %s.\n", getpid(), *args, strerror(errno));
     exit(2);
 }
 
@@ -37,9 +37,13 @@ void write_buffer(char* buffer) {
 int chld_exit_code;
 char loop;
 
-void handle_child(int signal, siginfo_t *siginfo, void *context){
+void handle_child(int signal, siginfo_t *siginfo, void *context) {
     chld_exit_code = signal;
     loop = 0;
+}
+
+void handle_sigtrap(int signal, siginfo_t *siginfo, void *context) {
+    fprintf(stdout, "%10d sigtrap\n", getpid());
 }
 
 void process(char * logfile, char * command, char multiplex) {
@@ -52,12 +56,20 @@ void process(char * logfile, char * command, char multiplex) {
         fprintf(stderr, "%10d Fail while creating handler. %s\n", getpid(), strerror(errno));
         exit(2);
     }
-
+    struct sigaction sb; // TODO sa? mb do not handle?
+    sa.sa_flags = SA_SIGINFO;
+    sa.sa_sigaction = &handle_sigtrap;
+    if (-1 == sigaction(SIGTRAP, &sb, NULL)) { // TODO double signal handle
+        fprintf(stderr, "%10d Fail while creating handler. %s\n", getpid(), strerror(errno));
+        exit(2);
+    }
     int pfd[2];
     if (-1 == pipe(pfd)) {
         fprintf(stderr, "%10d Error while pipe. %s\n", getpid(), strerror(errno));
         exit(2);
     }
+
+    loop = 1; // sets loop flag before fork, becose child can exit quickly.
 
     pid_t pid = fork();
     if (0 == pid) { // child
@@ -72,24 +84,31 @@ void process(char * logfile, char * command, char multiplex) {
         // prepare read loop
         int count = 0;
         char buffer[READ_BUFFER_SIZE];
-        loop = 1;
         int flags = fcntl(pfd[0], F_GETFL, 0); // TODO handle error? see man
         if (fcntl(pfd[0], F_SETFL, flags | O_NONBLOCK)) {
             perror("fcntl");
             exit(2);
         }
+        int prev_count = -2; // DEBUG
         while (loop) {
             count = read(pfd[0], buffer, READ_BUFFER_SIZE);
-            //fprintf(stderr, "count = %d\n", count); // DEBUG
+            if (prev_count != count) { // DEBUG
+                fprintf(stderr, "count = %d\n", count); // DEBUG
+            }
+            prev_count = count; // DEBUG
             if (-1 == count) {
-                if (EAGAIN != errno) {
-                    perror("Read error. ");
+                if (EINTR == errno) {
+                    // read was interrupted by a signal. do nothing.
+                } else if (EAGAIN == errno) {
+                    // there are no data in pipe now. do nothing.
+                } else {
+                    // other error.
+                    fprintf(stderr, "%10d Read error. %s\n", getpid(), strerror(errno));
                     exit(2);
-                } // else there are no data in pipe
+                }
             } else {
                 buffer[count] = 0;
                 write_buffer(buffer);
-                //fprintf(stderr, "%d >1 %s", getpid(), buffer);
             }
         }
         fprintf(stderr, "%10d TERMINATED WITH EXIT CODE: %d\n", getpid(), chld_exit_code);
