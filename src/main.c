@@ -2,7 +2,8 @@
 #include <getopt.h>
 #include <stdlib.h>
 
-#include "process.h"
+#include "async.h"
+#include "select.h"
 
 int main(int argc, char ** argv) {
     srand(time(NULL));
@@ -39,14 +40,6 @@ int main(int argc, char ** argv) {
                         break;
                     case 2:  // multiplex
                         multiplex = atoi(optarg);
-                        if (multiplex == 0 || multiplex == 1) {
-                            break;
-                        } else {
-                            fprintf(stderr,
-                                "Incorrect multiplex value : '%s'.\n",
-                                optarg);
-                            exit(2);
-                        }
                 }
                 break;
             case '?':
@@ -57,6 +50,14 @@ int main(int argc, char ** argv) {
                 exit(2);
         }
     }
-    process(logfile, command, multiplex);
+    
+    if (0 == multiplex) {
+        async(logfile, command);
+    } else if (1 == multiplex) {
+        process_select(logfile, command);
+    } else {
+        fprintf(stderr, "Incorrect multiplex value : '%s'.\n", optarg);
+        exit(2);
+    }
     return 0;
 }

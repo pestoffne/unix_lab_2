@@ -11,7 +11,7 @@ $ make
 
 HOW TO RUN
 <pre>
-$ ./manager --logfile LF --execute "CMD ARGS" --multiplex M
+$ ./manager --execute "CMD ARGS" [--logfile LF] [--multiplex M]
 </pre>
 
 
