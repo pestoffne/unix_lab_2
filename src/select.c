@@ -11,13 +11,41 @@
 #include "common.h"
 #include "select.h"
 
-int chld_exit_code;
-int pfd[3][2];
+char hoop;
 char loop;
+int chld_exit_code = -1;
+int pfd[3][2];
 
 static void handle_child(int signal, siginfo_t *siginfo, void *context) {
     chld_exit_code = signal;
-    loop = 0;
+    fprintf(stderr, "SIGCHLD\n"); // DEBUG
+}
+
+static void a(int read_fd, int write_fd) {
+    while (1) {
+        fprintf(stderr, "ITER b %d\n", loop); // DEBUG
+        int count = read(read_fd, buffer, READ_BUFFER_SIZE);
+        fprintf(stderr, "ITER a %d\n", loop); // DEBUG
+        if (-1 == count) {
+            if (EAGAIN == errno) {
+                fprintf(stderr, "break EAGAIN\n"); // DEBUG
+                break;
+            } else if (EINTR == errno) {
+                // do nothing
+                fprintf(stderr, "EINTR %d\n", loop); // DEBUG
+            } else {
+                perror("read. ");
+                exit(2);
+            }
+        } else if (0 == count) {
+            fprintf(stderr, "break 0 == count\n"); // DEBUG
+            break;
+        } else { // (count > 0)
+            buffer[count] = 0;
+            write_buffer(write_fd, buffer);
+            // TODO add file logging
+        }
+    }
 }
 
 void process_select(char * logfile, char * command) {
@@ -43,7 +71,6 @@ void process_select(char * logfile, char * command) {
 
     fd_set fds;
     FD_ZERO(&fds);
-    FD_SET(pfd[0][0], &fds);
     FD_SET(pfd[1][0], &fds);
     FD_SET(pfd[2][0], &fds);
     int fd_sup = 9;
@@ -52,10 +79,6 @@ void process_select(char * logfile, char * command) {
 
     pid_t pid = fork();
     if (0 == pid) { // child
-        if (-1 == dup2(pfd[0][1], 0)) {
-            perror("Error while dup2(pfd[0][0], 0). ");
-            exit(2);
-        }
         if (-1 == dup2(pfd[1][1], 1)) {
             perror("Error while dup2(pfd[1][1], 1). ");
             exit(2);
@@ -74,79 +97,41 @@ void process_select(char * logfile, char * command) {
             }
         }
 
-        do {
+        while (1) {
+            fprintf(stderr, "ITER %d\n", loop); // DEBUG
+
             struct timeval tv;
             tv.tv_sec = 1;
             tv.tv_usec = 0;
 
-            int count;
             int retval = select(fd_sup, &fds, NULL, NULL, &tv);
+                        fprintf(stderr, "ITER %d\n", loop); // DEBUG
             if (-1 == retval) {
-                if (EINTR != errno) {
+                if (EINTR == errno) {
+                    // do nothing
+                } else {
                     perror("select. ");
                     exit(2);
-                } // else if (EINTR == errno) { do nothing }
+                }
             } else if (0 == retval) {
                 fprintf(stderr, "DATE/TIME, NOIO\n"); // TODO
-            } else if (FD_ISSET(pfd[0][0], &fds)) {
-                while (1) {
-                    count = read(pfd[0][0], buffer, READ_BUFFER_SIZE);
-                    if (-1 == count) {
-                        if (EAGAIN == errno) {
-                            fprintf(stderr, "break EAGAIN\n"); // DEBUG
-                            break;
-                        } else if (EINTR != errno) {
-                            perror("read. ");
-                            exit(2);
-                        } // else if (EINTR == errno) { do nothing }
-                    } else if (0 == count) {
-                        fprintf(stderr, "break 0 == count\n"); // DEBUG
-                        break;
-                    } else { // (count > 0)
-                        buffer[count] = 0;
-                        write_buffer(0, buffer);
-                    }
+            } else {
+            fprintf(stderr, "ITER %d\n", loop); // DEBUG
+
+                if (FD_ISSET(pfd[1][0], &fds)) {
+                    a(pfd[1][0], 1);
                 }
-            } else if (FD_ISSET(pfd[1][0], &fds)) {
-                while (1) {
-                    count = read(pfd[1][0], buffer, READ_BUFFER_SIZE);
-                    if (-1 == count) {
-                        if (EAGAIN == errno) {
-                            fprintf(stderr, "break EAGAIN\n"); // DEBUG
-                            break;
-                        } else if (EINTR != errno) {
-                            perror("read. ");
-                            exit(2);
-                        } // else if (EINTR == errno) { do nothing }
-                    } else if (0 == count) {
-                        fprintf(stderr, "break 0 == count\n"); // DEBUG
-                        break;
-                    } else { // (count > 0)
-                        buffer[count] = 0;
-                        write_buffer(1, buffer);
-                    }
-                }
-            } else if (FD_ISSET(pfd[2][0], &fds)) {
-                while (1) {
-                    count = read(pfd[2][0], buffer, READ_BUFFER_SIZE);
-                    if (-1 == count) {
-                        if (EAGAIN == errno) {
-                            fprintf(stderr, "break EAGAIN\n"); // DEBUG
-                            break;
-                        } else if (EINTR != errno) {
-                            perror("read. ");
-                            exit(2);
-                        } // else if (EINTR == errno) { do nothing }
-                    } else if (0 == count) {
-                        fprintf(stderr, "break 0 == count\n"); // DEBUG
-                        break;
-                    } else { // (count > 0)
-                        buffer[count] = 0;
-                        write_buffer(2, buffer);
-                    }
+            fprintf(stderr, "ITER_ %d\n", loop); // DEBUG
+
+                if (FD_ISSET(pfd[2][0], &fds)) {
+                    a(pfd[2][0], 2);
                 }
             }
-        } while (loop);
+            fprintf(stderr, "ITER %d\n", loop); // DEBUG
+            if (loop == 0) {
+                break;
+            }
+        }
 
         fprintf(stderr, "%10d TERMINATED WITH EXIT CODE: %d\n", getpid(), chld_exit_code);
     } else { // (-1 == pid) error

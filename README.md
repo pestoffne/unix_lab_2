@@ -21,3 +21,12 @@ $ make clean
 or
 $ make clear
 </pre>
+
+
+EXAPLES
+<pre>
+./manager --execute "ls -a"
+./manager --execute "cat -n /home/pestov_ev/.ssh/id_dsa"
+cat -n /home/pestov_ev/.ssh/id_dsa | ./manager --execute "tail -n 1"
+</pre>
+
