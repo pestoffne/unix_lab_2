@@ -28,5 +28,5 @@ EXAPLES
 ./manager --execute "ls -a"
 ./manager --execute "cat -n /home/pestov_ev/.ssh/id_dsa"
 cat -n /home/pestov_ev/.ssh/id_dsa | ./manager --execute "tail -n 1"
+cat README.md | ./manager --execute "sort"
 </pre>
-
