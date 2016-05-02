@@ -29,4 +29,5 @@ EXAPLES
 ./manager --execute "cat -n /home/pestov_ev/.ssh/id_dsa"
 cat -n /home/pestov_ev/.ssh/id_dsa | ./manager --execute "tail -n 1"
 cat README.md | ./manager --execute "sort"
+find /* 2>/dev/null | ./manager --execute "grep pestov"
 </pre>

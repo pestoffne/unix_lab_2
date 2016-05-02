@@ -108,7 +108,7 @@ void process_select(char * logfile, char * command) {
                     exit(2);
                 }
             } else if (0 == retval) {
-                fprintf(stderr, "DATE/TIME, NOIO\n"); // TODO
+                write_noio();
             } else {
                 if (FD_ISSET(pfd[1][0], &fds)) {
                     a(pfd[1][0], 1);

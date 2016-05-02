@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <time.h>
 
 #include "common.h"
 
@@ -26,4 +27,12 @@ void write_buffer(int fd_num, char* buffer) {
         fprintf(stdout, "%10d %s %s\n", getpid(), fd_name[fd_num], pch);
         pch = strtok(NULL, "\n"); // TODO next line
     }
+}
+
+void write_noio() {
+    char time_str[9];
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    strftime(time_str, 9, "%H:%M:%S", &tm);
+    fprintf(stdout, "%s, NOIO\n", time_str);
 }
