@@ -36,3 +36,28 @@ void write_noio() {
     strftime(time_str, 9, "%H:%M:%S", &tm);
     fprintf(stdout, "%s, NOIO\n", time_str);
 }
+
+void read_avaible(int read_fd, int write_fd) {
+    while (1) {
+        int count = read(read_fd, buffer, READ_BUFFER_SIZE);
+        if (-1 == count) {
+            if (EAGAIN == errno) {
+                fprintf(stderr, "break EAGAIN\n"); // DEBUG
+                break;
+            } else if (EINTR == errno) {
+                // do nothing
+                fprintf(stderr, "EINTR\n"); // DEBUG
+            } else {
+                perror("read. ");
+                exit(2);
+            }
+        } else if (0 == count) {
+            fprintf(stderr, "break 0 == count\n"); // DEBUG
+            break;
+        } else { // (count > 0)
+            buffer[count] = 0;
+            write_buffer(write_fd, buffer);
+            // TODO add file logging
+        }
+    }
+}

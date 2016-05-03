@@ -17,19 +17,13 @@ int chld_exit_code;
 int pfd[2];
 
 static void handle_child(int signal, siginfo_t *siginfo, void *context) {
+    fprintf(stderr, "SIGCHLD\n"); // DEBUG
     chld_exit_code = signal;
 }
 
-void handle_write(int signal, siginfo_t *siginfo, void *context) {
-    fprintf(stderr, "write handler.\n"); // DEBUG
-    int count = read(pfd[0], buffer, READ_BUFFER_SIZE);
-    if (-1 == count) {
-        fprintf(stderr, "%10d Read error. %s\n", getpid(), strerror(errno));
-        exit(2);
-    } else {
-        buffer[count] = 0;
-        write_buffer(1, buffer);
-    }
+static void handle_write(int signal, siginfo_t *siginfo, void *context) {
+    fprintf(stderr, "write handler. %d\n", signal); // DEBUG
+    read_avaible(pfd[0], 1);
 }
 
 void async(char * logfile, char * command) {
@@ -38,11 +32,11 @@ void async(char * logfile, char * command) {
     sigset_t mask;
     sigfillset(&mask);
     sa.sa_mask = mask;
-    sa.sa_sigaction = &handle_child;
-    if (-1 == sigaction(SIGCHLD, &sa, NULL)) {
-        fprintf(stderr, "%10d Fail while creating handler. %s\n", getpid(), strerror(errno));
-        exit(2);
-    }
+    //sa.sa_sigaction = &handle_child;
+    //if (-1 == sigaction(SIGCHLD, &sa, NULL)) {
+    //    fprintf(stderr, "%10d Fail while creating handler. %s\n", getpid(), strerror(errno));
+    //    exit(2);
+    //}
 
     // creates handler of SIGUSR1
     sa.sa_sigaction = &handle_write;    
@@ -64,33 +58,42 @@ void async(char * logfile, char * command) {
             perror("Error while dup2.");
             exit(2);
         }
-        if (fcntl(1, F_SETSIG, SIGUSR1)) {
+        //sleep(1); // DEBUG
+        //if (fcntl(1, F_SETSIG, SIGUSR1)) {
+        //    perror("fcntl setsig");
+        //    exit(2);
+        //}
+        fcntl(pfd[0], F_SETOWN, getppid());
+        fcntl(pfd[0], F_SETFL, O_ASYNC);
+        fprintf(stderr, "flag =  %d", fcntl(1, F_GETFD));
+        if (fcntl(pfd[0], F_SETSIG, SIGUSR1)) {
             perror("fcntl setsig");
             exit(2);
         }
-        if (fcntl(pfd[1], F_SETSIG, SIGUSR1)) {
-            perror("fcntl setsig");
-            exit(2);
-        }
+        
 
+        //write(1, "aaa", 3); // DEBUG
+        //fprintf(stdout, "bbb\n");
         my_execute(command);
     } else if (pid > 0) { // parent
-        int flags = fcntl(pfd[0], F_GETFL, 0); // TODO handle error? see man
-        if (fcntl(pfd[0], F_SETFL, flags | O_NONBLOCK)) {
-            perror("fcntl");
-            exit(2);
-        }
-        //if (fcntl(pfd[1], F_SETSIG, SIGUSR1)) {
+        //int flags = fcntl(pfd[0], F_GETFL, 0); // TODO handle error? see man
+        //if (fcntl(pfd[0], F_SETFL, flags | O_NONBLOCK)) {
+        //    perror("fcntl");
+        //    exit(2);
+        //}
+        //if (fcntl(pfd[0], F_SETSIG, SIGUSR1)) {
         //    perror("fcntl setsig");
         //    exit(2);
         //}
 
-        fprintf(stderr, "wait ...\n"); // DEBUG
+        //fprintf(stderr, "wait ...\n"); // DEBUG
         int status;
         if (-1 == wait(&status)) {
             fprintf(stderr, "%10d Failed to handle CHLD zombie. %s\n", getpid(), strerror(errno));
             exit(2);
         }
+        //fprintf(stderr, "pid = %d\n", getpid()); // DEBUG
+        //sleep(2000); // DEBUG
         
         fprintf(stderr, "%10d TERMINATED WITH EXIT CODE: %d\n", getpid(), chld_exit_code);
     } else { // (-1 == pid) error
