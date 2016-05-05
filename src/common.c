@@ -3,6 +3,9 @@
 #include <errno.h>
 #include <string.h>
 #include <time.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "common.h"
 
@@ -20,7 +23,7 @@ void my_execute(char * command) {
     exit(2);
 }
 
-void write_buffer(int fd_num, char* buffer) {
+void write_buffer(const int fd_num, char * buffer) {
     static char* fd_name[3] = {">0", "<1", "<2"};
     char * pch = strtok(buffer, "\n");
     while (pch != NULL) {
@@ -29,35 +32,61 @@ void write_buffer(int fd_num, char* buffer) {
     }
 }
 
-void write_noio() {
+void write_noio(const int log_fd) {
     char time_str[9];
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
     strftime(time_str, 9, "%H:%M:%S", &tm);
-    fprintf(stdout, "%s, NOIO\n", time_str);
+    write(log_fd, time_str, 9);
+    write(log_fd, ", NOIO\n", 7); // TODO use write once
 }
 
-void read_avaible(int read_fd, int write_fd) {
+void read_avaible(const int read_fd, const int write_fd, const int log_fd) {
     while (1) {
         int count = read(read_fd, buffer, READ_BUFFER_SIZE);
         if (-1 == count) {
             if (EAGAIN == errno) {
-                fprintf(stderr, "break EAGAIN\n"); // DEBUG
                 break;
             } else if (EINTR == errno) {
                 // do nothing
-                fprintf(stderr, "EINTR\n"); // DEBUG
             } else {
                 perror("read. ");
                 exit(2);
             }
         } else if (0 == count) {
-            fprintf(stderr, "break 0 == count\n"); // DEBUG
             break;
         } else { // (count > 0)
             buffer[count] = 0;
+            if (log_fd != FD_NULL) {
+                write(log_fd, buffer, count);
+            }
             write_buffer(write_fd, buffer);
-            // TODO add file logging
         }
     }
+}
+
+int my_file_open(const char * name) {
+    int fd;
+    if (*name == '\0') {
+        return FD_NULL;
+    } else {
+        fd = open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+        if (fd == -1) {
+            perror("Can not open logfile.");
+            return FD_NULL;
+        }
+        return fd;
+    }
+}
+
+void init_pipes() {
+    int i;
+    for (i = 0; i < 3; i++) {
+        if (-1 == pipe(pfd[i])) {
+            fprintf(stderr, "%10d Error while pipe. %s\n", getpid(), strerror(errno));
+            exit(2);
+        }
+    }
+    chld_exit_code = -1;
+    log_fd = FD_NULL;
 }

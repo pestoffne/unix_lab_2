@@ -11,17 +11,12 @@
 #include "common.h"
 #include "select.h"
 
-char loop;
-int chld_exit_code = -1;
-int pfd[3][2];
-
 static void handle_child(int signal, siginfo_t *siginfo, void *context) {
     chld_exit_code = signal;
     loop = 0;
 }
 
 void process_select(char * logfile, char * command) {
-    fprintf(stderr, "%10d process_select(\"%s\", \"%s\");\n", getpid(), logfile, command);
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO;
     sigset_t mask;
@@ -33,13 +28,7 @@ void process_select(char * logfile, char * command) {
         exit(2);
     }
 
-    int i;
-    for (i = 0; i < 3; i++) {
-        if (-1 == pipe(pfd[i])) {
-            fprintf(stderr, "%10d Error while pipe. %s\n", getpid(), strerror(errno));
-            exit(2);
-        }
-    }
+    init_pipes();
 
     fd_set fds;
     FD_ZERO(&fds);
@@ -47,6 +36,7 @@ void process_select(char * logfile, char * command) {
     FD_SET(pfd[2][0], &fds);
     int fd_sup = 9;
 
+    int log_fd = my_file_open(logfile);
     loop = 1;
 
     pid_t pid = fork();
@@ -61,6 +51,7 @@ void process_select(char * logfile, char * command) {
         }
         my_execute(command);
     } else if (pid > 0) { // parent
+        int i;
         for (i = 0; i < 3; i++) {
             int flags = fcntl(pfd[i][0], F_GETFL, 0); // TODO handle error? see man
             if (fcntl(pfd[i][0], F_SETFL, flags | O_NONBLOCK)) {
@@ -83,13 +74,13 @@ void process_select(char * logfile, char * command) {
                     exit(2);
                 }
             } else if (0 == retval) {
-                write_noio();
+                write_noio(log_fd);
             } else {
                 if (FD_ISSET(pfd[1][0], &fds)) {
-                    read_avaible(pfd[1][0], 1);
+                    read_avaible(pfd[1][0], 1, log_fd);
                 }
                 if (FD_ISSET(pfd[2][0], &fds)) {
-                    read_avaible(pfd[2][0], 2);
+                    read_avaible(pfd[2][0], 2, log_fd);
                 }
             }
         } while (loop);
