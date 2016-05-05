@@ -43,7 +43,9 @@ void write_noio(const int log_fd) {
 
 void read_avaible(const int read_fd, const int write_fd, const int log_fd) {
     while (1) {
+        fprintf(stderr, "before read %d\n", read_fd); // DEBUG
         int count = read(read_fd, buffer, READ_BUFFER_SIZE);
+        fprintf(stderr, "after read %d\n", read_fd); // DEBUG
         if (-1 == count) {
             if (EAGAIN == errno) {
                 break;
