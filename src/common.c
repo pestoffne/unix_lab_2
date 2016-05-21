@@ -24,7 +24,9 @@ void my_execute(char * command) {
 }
 
 void write_buffer(const int fd_num, char * buffer) {
-    static char* fd_name[3] = {">0", "<1", "<2"};
+    static char* fd_name[] = {">0", "<1", "<2"
+        ,"a", "b", "c", "d", "e", "f", "g" // DEBUG
+        };
     char * pch = strtok(buffer, "\n");
     while (pch != NULL) {
         fprintf(stdout, "%10d %s %s\n", getpid(), fd_name[fd_num], pch);
@@ -43,9 +45,7 @@ void write_noio(const int log_fd) {
 
 void read_avaible(const int read_fd, const int write_fd, const int log_fd) {
     while (1) {
-        fprintf(stderr, "before read %d\n", read_fd); // DEBUG
         int count = read(read_fd, buffer, READ_BUFFER_SIZE);
-        fprintf(stderr, "after read %d\n", read_fd); // DEBUG
         if (-1 == count) {
             if (EAGAIN == errno) {
                 break;
@@ -67,12 +67,37 @@ void read_avaible(const int read_fd, const int write_fd, const int log_fd) {
     }
 }
 
+void read_avaible_c(const int read_fd, const int write_fd, const int log_fd) {
+    while (1) {
+        int count = read(read_fd, buffer, READ_BUFFER_SIZE);
+        if (-1 == count) {
+            if (EAGAIN == errno) {
+                break;
+            } else if (EINTR == errno) {
+                // do nothing
+            } else {
+                perror("Read. ");
+                exit(2);
+            }
+        } else { // (count > 0)
+            buffer[count] = 0;
+            if (log_fd != FD_NULL) {
+                write(log_fd, buffer, count);
+            }
+            write_buffer(0, buffer);
+            write(write_fd, buffer, count);
+            write(write_fd, "\n", 1);
+            break;
+        }
+    }
+}
+
 int my_file_open(const char * name) {
     int fd;
     if (*name == '\0') {
         return FD_NULL;
     } else {
-        fd = open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+        fd = open(name, O_CREAT | O_WRONLY | O_NONBLOCK, S_IRUSR | S_IWUSR);
         if (fd == -1) {
             perror("Can not open logfile.");
             return FD_NULL;

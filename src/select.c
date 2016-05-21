@@ -30,17 +30,15 @@ void process_select(char * logfile, char * command) {
 
     init_pipes();
 
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(pfd[1][0], &fds);
-    FD_SET(pfd[2][0], &fds);
-    int fd_sup = 9;
-
     int log_fd = my_file_open(logfile);
     loop = 1;
 
     pid_t pid = fork();
     if (0 == pid) { // child
+        if (-1 == dup2(pfd[0][0], 0)) {
+            perror("Error while dup2(pfd[0][0], 0). ");
+            exit(2);
+        }
         if (-1 == dup2(pfd[1][1], 1)) {
             perror("Error while dup2(pfd[1][1], 1). ");
             exit(2);
@@ -51,21 +49,37 @@ void process_select(char * logfile, char * command) {
         }
         my_execute(command);
     } else if (pid > 0) { // parent
-        int i;
-        for (i = 0; i < 3; i++) {
-            int flags = fcntl(pfd[i][0], F_GETFL, 0); // TODO handle error? see man
-            if (fcntl(pfd[i][0], F_SETFL, flags | O_NONBLOCK)) {
-                perror("fcntl");
-                exit(2);
-            }
-        }
+        //// int fcntl(int fildes, int cmd, ...);
+        //int i, flags;
+        //for (i = 0; i < 3; i++) {
+        //    flags = fcntl(pfd[i][0], F_GETFL); // TODO handle error? see man
+        //    fprintf(stderr, "b flags = %o\n", flags); // DEBUG
+        //    if (fcntl(pfd[i][0], F_SETFL, O_NONBLOCK)) {
+        //        perror("fcntl");
+        //        exit(2);
+        //    }
+        //    flags = fcntl(pfd[i][0], F_GETFL);
+        //    fprintf(stderr, "a flags = %o\n", flags); // DEBUG
+        //}
+
+        fcntl(pfd[1][0], F_SETFD, O_NONBLOCK);
+        fcntl(pfd[2][0], F_SETFL, O_NONBLOCK);
 
         do {
             struct timeval tv;
             tv.tv_sec = 1;
             tv.tv_usec = 0;
 
-            int retval = select(fd_sup, &fds, NULL, NULL, &tv);
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(0, &readfds);
+
+            fd_set writefds;
+            FD_ZERO(&writefds);
+            FD_SET(pfd[1][0], &writefds);
+            FD_SET(pfd[2][0], &writefds);
+
+            int retval = select(9, &readfds, &writefds, NULL, &tv);
             if (-1 == retval) {
                 if (EINTR == errno) {
                     // do nothing
@@ -75,11 +89,16 @@ void process_select(char * logfile, char * command) {
                 }
             } else if (0 == retval) {
                 write_noio(log_fd);
+                //write_noio(2);
             } else {
-                if (FD_ISSET(pfd[1][0], &fds)) {
+                if (FD_ISSET(0, &readfds)) {
+                    fprintf(stderr, "read_avaible_c"); // DEBUG
+                    read_avaible_c(0, pfd[0][1], log_fd);
+                }
+                if (FD_ISSET(pfd[1][0], &writefds)) {
                     read_avaible(pfd[1][0], 1, log_fd);
                 }
-                if (FD_ISSET(pfd[2][0], &fds)) {
+                if (FD_ISSET(pfd[2][0], &writefds)) {
                     read_avaible(pfd[2][0], 2, log_fd);
                 }
             }

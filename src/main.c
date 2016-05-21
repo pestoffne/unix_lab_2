@@ -21,6 +21,8 @@ int main(int argc, char ** argv) {
             {"logfile",   1, 0, 0 }, // index = 0
             {"execute",   1, 0, 0 }, // index = 1
             {"multiplex", 1, 0, 0 }, // index = 2
+            {"select",    0, 0, 0 }, // index = 3
+            {"async",     0, 0, 0 }, // index = 4
             {0,           0, 0, 0 }
         };
 
@@ -40,6 +42,13 @@ int main(int argc, char ** argv) {
                         break;
                     case 2:  // multiplex
                         multiplex = atoi(optarg);
+                        break;
+                    case 3: // select
+                        multiplex = 1;
+                        break;
+                    case 4: // async
+                        multiplex = 0;
+                        break;
                 }
                 break;
             case '?':
