@@ -49,20 +49,8 @@ void process_select(char * logfile, char * command) {
         }
         my_execute(command);
     } else if (pid > 0) { // parent
-        //// int fcntl(int fildes, int cmd, ...);
-        //int i, flags;
-        //for (i = 0; i < 3; i++) {
-        //    flags = fcntl(pfd[i][0], F_GETFL); // TODO handle error? see man
-        //    fprintf(stderr, "b flags = %o\n", flags); // DEBUG
-        //    if (fcntl(pfd[i][0], F_SETFL, O_NONBLOCK)) {
-        //        perror("fcntl");
-        //        exit(2);
-        //    }
-        //    flags = fcntl(pfd[i][0], F_GETFL);
-        //    fprintf(stderr, "a flags = %o\n", flags); // DEBUG
-        //}
 
-        fcntl(pfd[1][0], F_SETFD, O_NONBLOCK);
+        fcntl(pfd[1][0], F_SETFL, O_NONBLOCK);
         fcntl(pfd[2][0], F_SETFL, O_NONBLOCK);
 
         do {
@@ -73,13 +61,10 @@ void process_select(char * logfile, char * command) {
             fd_set readfds;
             FD_ZERO(&readfds);
             FD_SET(0, &readfds);
+            FD_SET(pfd[1][0], &readfds);
+            FD_SET(pfd[2][0], &readfds);
 
-            fd_set writefds;
-            FD_ZERO(&writefds);
-            FD_SET(pfd[1][0], &writefds);
-            FD_SET(pfd[2][0], &writefds);
-
-            int retval = select(9, &readfds, &writefds, NULL, &tv);
+            int retval = select(9, &readfds, NULL, NULL, &tv);
             if (-1 == retval) {
                 if (EINTR == errno) {
                     // do nothing
@@ -92,13 +77,12 @@ void process_select(char * logfile, char * command) {
                 //write_noio(2);
             } else {
                 if (FD_ISSET(0, &readfds)) {
-                    fprintf(stderr, "read_avaible_c"); // DEBUG
                     read_avaible_c(0, pfd[0][1], log_fd);
                 }
-                if (FD_ISSET(pfd[1][0], &writefds)) {
+                if (FD_ISSET(pfd[1][0], &readfds)) {
                     read_avaible(pfd[1][0], 1, log_fd);
                 }
-                if (FD_ISSET(pfd[2][0], &writefds)) {
+                if (FD_ISSET(pfd[2][0], &readfds)) {
                     read_avaible(pfd[2][0], 2, log_fd);
                 }
             }

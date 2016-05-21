@@ -63,6 +63,7 @@ void read_avaible(const int read_fd, const int write_fd, const int log_fd) {
                 write(log_fd, buffer, count);
             }
             write_buffer(write_fd, buffer);
+            break;
         }
     }
 }
@@ -85,7 +86,7 @@ void read_avaible_c(const int read_fd, const int write_fd, const int log_fd) {
                 write(log_fd, buffer, count);
             }
             write_buffer(0, buffer);
-            write(write_fd, buffer, count);
+            write(write_fd, buffer, count - 1);
             write(write_fd, "\n", 1);
             break;
         }
