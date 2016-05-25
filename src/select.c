@@ -35,23 +35,23 @@ void process_select(char * logfile, char * command) {
 
     pid_t pid = fork();
     if (0 == pid) { // child
-        if (-1 == dup2(pfd[0][0], 0)) {
+        if (-1 == dup2(PIN[PIPE_WRITE], 0)) {
             perror("Error while dup2(pfd[0][0], 0). ");
             exit(2);
         }
-        if (-1 == dup2(pfd[1][1], 1)) {
+        if (-1 == dup2(POUT[PIPE_READ], 1)) {
             perror("Error while dup2(pfd[1][1], 1). ");
             exit(2);
         }
-        if (-1 == dup2(pfd[2][1], 2)) {
+        if (-1 == dup2(PERR[PIPE_READ], 2)) {
             perror("Error while dup2(pfd[2][1], 2). ");
             exit(2);
         }
         my_execute(command);
     } else if (pid > 0) { // parent
 
-        fcntl(pfd[1][0], F_SETFL, O_NONBLOCK);
-        fcntl(pfd[2][0], F_SETFL, O_NONBLOCK);
+        fcntl(POUT[PIPE_WRITE], F_SETFL, O_NONBLOCK);
+        fcntl(PERR[PIPE_WRITE], F_SETFL, O_NONBLOCK);
 
         do {
             struct timeval tv;
@@ -73,16 +73,19 @@ void process_select(char * logfile, char * command) {
                     exit(2);
                 }
             } else if (0 == retval) {
-                write_noio(log_fd);
-                //write_noio(2);
+                if (log_fd == FD_NULL) {
+                    write_noio(2);
+                } else {
+                    write_noio(log_fd);
+                }
             } else {
                 if (FD_ISSET(0, &readfds)) {
                     redirect_input(0, pfd[0][1], log_fd);
                 }
-                if (FD_ISSET(pfd[1][0], &readfds)) {
+                if (FD_ISSET(POUT[PIPE_WRITE], &readfds)) {
                     redirect_output(pfd[1][0], 1, log_fd);
                 }
-                if (FD_ISSET(pfd[2][0], &readfds)) {
+                if (FD_ISSET(PERR[PIPE_WRITE], &readfds)) {
                     redirect_output(pfd[2][0], 2, log_fd);
                 }
             }
