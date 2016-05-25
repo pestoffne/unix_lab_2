@@ -77,13 +77,13 @@ void process_select(char * logfile, char * command) {
                 //write_noio(2);
             } else {
                 if (FD_ISSET(0, &readfds)) {
-                    read_avaible_c(0, pfd[0][1], log_fd);
+                    redirect_input(0, pfd[0][1], log_fd);
                 }
                 if (FD_ISSET(pfd[1][0], &readfds)) {
-                    read_avaible(pfd[1][0], 1, log_fd);
+                    redirect_output(pfd[1][0], 1, log_fd);
                 }
                 if (FD_ISSET(pfd[2][0], &readfds)) {
-                    read_avaible(pfd[2][0], 2, log_fd);
+                    redirect_output(pfd[2][0], 2, log_fd);
                 }
             }
         } while (loop);
