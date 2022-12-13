@@ -1,72 +1,90 @@
-#include <stdio.h>
 #include <getopt.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "async.h"
 #include "select.h"
 
-int main(int argc, char ** argv) {
-    srand(time(NULL));
-    // parse using getopt
-    int c;
+struct App {
+    char *logfile;
+    char *command;
+    bool multiplex;
+};
+
+struct App *parse_arguments(int argc, char **argv) {
     int digit_optind = 0;
 
-    char * logfile = "";
-    char * command = "";
-    char multiplex = 1;
+    struct App *app = (struct App *)malloc(sizeof(struct App));
 
-    while (1) {
+    app->logfile = "";
+    app->command = "";
+    app->multiplex = true;
+
+    for (;;) {
         int option_index = 0;
+
         static struct option long_options[] = {
-            {"logfile",   1, 0, 0 }, // index = 0
-            {"execute",   1, 0, 0 }, // index = 1
-            {"multiplex", 1, 0, 0 }, // index = 2
-            {"select",    0, 0, 0 }, // index = 3
-            {"async",     0, 0, 0 }, // index = 4
-            {0,           0, 0, 0 }
+            { "logfile",   1, 0, 0 },  // index = 0
+            { "execute",   1, 0, 0 },  // index = 1
+            { "multiplex", 1, 0, 0 },  // index = 2
+            { "select",    0, 0, 0 },  // index = 3
+            { "async",     0, 0, 0 },  // index = 4
+            { 0,           0, 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "", long_options, &option_index);
-        if (c == -1)
+        char c = getopt_long(argc, argv, "", long_options, &option_index);
+
+        if (c == -1) {
             break;
+        }
 
         switch (c) {
             case 0:
                 // parse --long arg
                 switch (option_index) {
                     case 0:  // logfile
-                        logfile = optarg;
+                        app->logfile = optarg;
                         break;
                     case 1:  // execute
-                        command = optarg;
+                        app->command = optarg;
                         break;
                     case 2:  // multiplex
-                        multiplex = atoi(optarg);
+                        app->multiplex = atoi(optarg);
                         break;
-                    case 3: // select
-                        multiplex = 1;
+                    case 3:  // select
+                        app->multiplex = true;
                         break;
-                    case 4: // async
-                        multiplex = 0;
+                    case 4:  // async
+                        app->multiplex = false;
                         break;
                 }
                 break;
             case '?':
                 // parse short arg
-                exit(2);
             default:
-                fprintf(stderr, "Error while parseing args.\n");
-                exit(2);
+                fprintf(stderr, "Error while parsing args.\n");
+                exit(EXIT_FAILURE);
         }
     }
-    
-    if (0 == multiplex) {
-        async(logfile, command);
-    } else if (1 == multiplex) {
-        process_select(logfile, command);
-    } else {
-        fprintf(stderr, "Incorrect multiplex value : '%s'.\n", optarg);
-        exit(2);
-    }
-    return 0;
+
+    return app;
 }
+
+int main(int argc, char **argv) {
+    srand(time(NULL));
+
+    struct App *app = parse_arguments(argc, argv);
+
+    if (app->multiplex) {
+        printf("%s\n", "Run process_select(logfile, command)");
+        process_select(app->logfile, app->command);
+        return EXIT_SUCCESS;
+    }
+
+    printf("%s\n", "Run async(logfile, command)");
+    async(app->logfile, app->command);
+    return EXIT_SUCCESS;
+}
+
