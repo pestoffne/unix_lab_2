@@ -11,15 +11,9 @@
 
 #include "async.h"
 
-// unused
-void add_flag(int file_descriptor, int new_flags) {
-    int old_flags = fcntl(file_descriptor, F_GETFL);
-    fcntl(file_descriptor, F_SETFL, old_flags | new_flags);
-}
-
 static void handle_write(int signal, siginfo_t *siginfo, void *context) {
     if (SIGIO == signal) {
-        //redirect_input(0, pfd[0][0], log_fd);
+        //redirect_input(0, pfd[0][1], log_fd);
         fprintf(stderr, "Is not implemented.\n");
     } else if (SIGUSR1 == signal) {
         redirect_output(pfd[1][0], 1, log_fd);
@@ -54,6 +48,7 @@ void async(const char *logfile, char *command) {
 }
 
 void async_child(char *command) {
+    // TODO: redirect input here
     EXIT_ON_FAILURE(dup2(pfd[1][1], 1));
     EXIT_ON_FAILURE(fcntl(pfd[1][0], F_SETOWN, getppid()));
     EXIT_ON_FAILURE(fcntl(pfd[1][0], F_SETFL, O_ASYNC | O_NONBLOCK));

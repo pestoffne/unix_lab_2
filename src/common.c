@@ -54,27 +54,24 @@ void redirect_output(int read_fd, int write_fd, int log_fd) {
         int count = read(read_fd, buffer, READ_BUFFER_SIZE);
 
         if (-1 == count) {
-            if (EAGAIN == errno) {
-                break;
-            } else if (EINTR == errno) {
-                // do nothing
-            } else {
-                perror("read. ");
-                exit(EXIT_FAILURE);
-            }
-        } else if (0 == count) {
-            break;
-        } else {  // (count > 0)
-            buffer[count] = 0;
-
-            if (log_fd != FD_NULL) {
-                write_time(log_fd);
-                write(log_fd, ", ", 2);
-                write(log_fd, buffer, count);
-            }
-
-            write_buffer(write_fd, buffer);
+            if (EAGAIN == errno) { break; }
+            if (EINTR == errno) { continue; }
+            perror("read. ");
+            exit(EXIT_FAILURE);
         }
+
+        if (0 == count) { break; }
+
+        // (count > 0)
+        buffer[count] = 0;
+
+        if (log_fd != FD_NULL) {
+            write_time(log_fd);
+            write(log_fd, ", ", 2);
+            write(log_fd, buffer, count);
+        }
+
+        write_buffer(write_fd, buffer);
     }
 }
 
@@ -83,28 +80,25 @@ void redirect_input(int read_fd, int write_fd, int log_fd) {
         int count = read(read_fd, buffer, READ_BUFFER_SIZE);
 
         if (-1 == count) {
-            if (EAGAIN == errno) {
-                break;
-            } else if (EINTR == errno) {
-                // do nothing
-            } else {
-                perror("Read. ");
-                exit(EXIT_FAILURE);
-            }
-        } else {  // (count > 0)
-            buffer[count] = '\0';
-
-            if (log_fd != FD_NULL) {
-                write_time(log_fd);
-                write(log_fd, ", ", 2);
-                write(log_fd, buffer, count);
-            }
-
-            write_buffer(0, buffer);
-            write(write_fd, buffer, count - 1);
-            write(write_fd, "\n", 1);
-            break;
+            if (EAGAIN == errno) { break; }
+            if (EINTR == errno) { continue; }
+            perror("Read. ");
+            exit(EXIT_FAILURE);
         }
+
+        // (count >= 0)
+        buffer[count] = '\0';
+
+        if (log_fd != FD_NULL) {
+            write_time(log_fd);
+            write(log_fd, ", ", 2);
+            write(log_fd, buffer, count);
+        }
+
+        write_buffer(0, buffer);
+        write(write_fd, buffer, count - 1);
+        write(write_fd, "\n", 1);
+        break;
     }
 }
 
